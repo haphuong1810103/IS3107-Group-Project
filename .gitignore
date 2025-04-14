@@ -1,3 +1,11 @@
+*.json
 .env
-airflow_docker/logs
-**/__pycache__/
+.venv
+__pycache__/
+
+*.pyc
+*.pyo
+*.pyd
+.venv
+
+.DS_Store
