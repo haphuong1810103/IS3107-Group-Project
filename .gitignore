@@ -6,6 +6,8 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.venv
 
 .DS_Store
+
+airflow_docker/logs/
+airflow_docker/dags/modules/__pycache__
