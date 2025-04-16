@@ -6,12 +6,15 @@ from google.cloud import storage, bigquery
 from io import StringIO
 import pandas as pd
 import json
+import os
+from dotenv import load_dotenv
 
+#
 default_args = {
     'owner': 'airflow',
     'start_date': datetime(2025, 4, 1),
-    'retries': 3,  # Set retries to 3
-    'retry_delay': timedelta(minutes=5),  # Delay between retries
+    'retries': 2,  # Set retries to 2
+    'retry_delay': timedelta(minutes=1),  # Delay between retries
     'email': ['nigeltanjerkang@gmail.com'],
     'email_on_failure': True,  # Send email on task failure
     'email_on_retry': False,  # Optionally, set to True if you want emails on retry as well
@@ -24,43 +27,35 @@ def fin_dag():
         return "Initializing the DAG"
     
     @task_group(group_id='download_data')
-    def download_data_group():
+    def download_dump_data():
         @task(task_id='yfinance_fetch_tickers')
         def fetch_tickers():
             return get_tickers()
         
-        @task(task_id='yfinance_get_latest_date')
-        def get_latest_date(ticker):
-            return get_latest_data_date(ticker)
-        
+        @task(task_id='yfinance_get_latest_data_date')
+        def get_latest_data_dates(ticker_list):
+            return [{"ticker": ticker, "latest_date": get_latest_data_date(ticker)} for ticker in ticker_list]
+
         @task(task_id='yfinance_download_data')
-        def download_and_upload(ticker, start_date):
-            start_date = start_date.strftime('%Y-%m-%d')
-            end_date = datetime.today().strftime('%Y-%m-%d')
-
-            df = download_data(ticker, start_date, end_date)
-
-            if df.empty:
-                print(f"No new data for {ticker} since {start_date}. Skipping upload.")
-                return None
+        def download_and_upload_data(ticker, start_date):
+            end_date = datetime.now()
+            ticker_data = download_data(ticker, start_date, end_date)
             
-            gcs_uri = upload_json_to_gcs(df, ticker)
-            return gcs_uri
+            if not ticker_data.empty:
+                gcs_uri = upload_json_to_gcs(ticker_data, ticker)
+                load_json_to_bigquery(gcs_uri)
+            else:
+                print(f"No new data for {ticker} since {start_date}. Skipping upload.")
         
-        @task(task_id='yfinance_load_json_to_bigquery')
-        def load_json_to_bigquery(gcs_uri):
-            """Load JSON data from GCS to BigQuery."""
-            return load_json_to_bigquery(gcs_uri)
-
         tickers = fetch_tickers()
-        start_dates = get_latest_date.expand(ticker=tickers)
-        gcs_uris = download_and_upload.expand(ticker=tickers, start_date=start_dates)
-        load_json_to_bigquery.expand(gcs_uri=gcs_uris)
-    
+        latest_data_dates = get_latest_data_dates(tickers)
+        download_and_upload_data.expand_kwargs(latest_data_dates)
+
+
     @task(task_id='end')
     def end():
         return "DAG execution completed."
     
-    initialize() >> download_data_group() >> end()
+    initialize() >> download_dump_data() >> end()
 
 dag_instance = fin_dag()

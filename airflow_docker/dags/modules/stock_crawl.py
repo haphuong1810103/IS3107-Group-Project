@@ -4,7 +4,7 @@ import datetime
 from google.cloud import storage, bigquery
 import os
 import json
-from dotenv import load_dotenv
+
 
 # === CONFIGURATION ===
 TICKERS = ['^GSPC', 'DJIA', '^NDX', 'BTC-USD', 'DOGE-USD']
@@ -15,10 +15,7 @@ BQ_DATASET = 'market_data'
 BQ_TABLE = 'yf_30days_json'
 
 # Google credentials setup
-load_dotenv()
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-PROJECT_ID = os.getenv('GCP_PROJECT_ID')
-
+PROJECT_ID = os.environ.get('GCP_PROJECT_ID')
 
 # === FUNCTIONS ===
 def get_tickers():
