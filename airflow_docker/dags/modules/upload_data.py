@@ -64,3 +64,4 @@ def load_json_to_bigquery(gcs_uri):
     load_job = client.load_table_from_uri(gcs_uri, table_ref, job_config=job_config)
     load_job.result()  # Wait until finished
     print(f"Loaded data from {gcs_uri} to BigQuery table {table_ref}")
+    return table_ref
