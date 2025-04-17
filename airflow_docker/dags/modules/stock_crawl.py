@@ -5,7 +5,6 @@ from google.cloud import storage, bigquery
 import os
 import json
 
-
 # === CONFIGURATION ===
 TICKERS = ['^GSPC', 'DJIA', '^NDX', 'BTC-USD', 'DOGE-USD']
 BUCKET_NAME = 'yfinance-data'

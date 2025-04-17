@@ -4,7 +4,6 @@ import datetime
 from google.cloud import storage, bigquery
 import os
 import json
-from dotenv import load_dotenv
 
 # === CONFIGURATION ===
 TICKERS = ['^GSPC', 'DJIA', '^NDX', 'BTC-USD', 'DOGE-USD']

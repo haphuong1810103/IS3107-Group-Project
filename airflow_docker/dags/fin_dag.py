@@ -7,7 +7,6 @@ from io import StringIO
 import pandas as pd
 import json
 import os
-from dotenv import load_dotenv
 
 #
 default_args = {
