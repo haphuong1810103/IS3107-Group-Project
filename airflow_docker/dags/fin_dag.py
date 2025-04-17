@@ -1,16 +1,13 @@
+import pandas as pd
+import json
+import os
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task, task_group
 from modules.stock_crawl import get_tickers, get_latest_data_date, download_data
 from modules.upload_data import upload_json_to_gcs, load_json_to_bigquery
-from google.cloud import storage, bigquery
-from io import StringIO
-import pandas as pd
-import json
-import os
-from airflow.providers.google.cloud.hooks.secret_manager import GoogleCloudSecretManagerHook
 
+# Set up environment
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GoogleCloudSecretManagerHook().get_secret(secret_id='is3107-key', project_id=PROJECT_ID, version_id=version_id)
 
 default_args = {
     'owner': 'airflow',
@@ -39,8 +36,11 @@ def fin_dag():
             return [{"ticker": ticker, "latest_date": get_latest_data_date(ticker)} for ticker in ticker_list]
 
         @task(task_id='yfinance_download_data')
-        def download_and_upload_data(ticker, start_date):
+        def download_and_upload_data(ticker_info:dict):
+            ticker = ticker_info["ticker"]
+            start_date = ticker_info["latest_date"]
             end_date = datetime.now()
+            
             ticker_data = download_data(ticker, start_date, end_date)
             
             if not ticker_data.empty:
@@ -51,7 +51,7 @@ def fin_dag():
         
         tickers = fetch_tickers()
         latest_data_dates = get_latest_data_dates(tickers)
-        download_and_upload_data.expand_kwargs(latest_data_dates)
+        download_and_upload_data.expand(ticker_info=latest_data_dates)
 
 
     @task(task_id='end')
