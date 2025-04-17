@@ -40,49 +40,42 @@ BQ_DATASET = 'market_data'
 BQ_TABLE = 'yf_30days_json'
 
 # === FUNCTIONS ===
-def get_tickers():
-    """Return the list of tickers to download."""
-    return TICKERS
-
 def get_latest_data_date(ticker):
     """Find the latest date for which we have data for the given ticker."""
-    client = get_authenticated_storage_client(PROJECT_ID)
+    client = storage.Client()
     bucket = client.bucket(BUCKET_NAME)
     
-    # List all blobs for this ticker
-    ticker_prefix = f"{DATA_DIR}{ticker.replace('^','')}_"
-    blobs = list(bucket.list_blobs(prefix=ticker_prefix))
+    ticker_safe = ticker.replace('^','')
+    blob_name = f"{DATA_DIR}{ticker_safe}.json"
+    blob = bucket.blob(blob_name)
     
-    if not blobs:
-        # If no data exists, use the default start date
+    if not blob.exists():
+        return datetime.datetime(2023, 1, 1)
+    
+    content = blob.download_as_string()
+    json_lines = content.decode('utf-8').strip().split('\n')
+    
+    if not json_lines:
         return datetime.datetime(2025, 3, 1)
     
-    latest_date = datetime.datetime(2025, 3, 1)  # Default start date
-    
-    for blob in blobs:
-        # For each file, check the most recent data point inside
-        content = blob.download_as_string()
-        
-        # Parse each JSON line
-        json_lines = content.decode('utf-8').strip().split('\n')
-        if json_lines:
-            # Get dates from all records
-            dates = []
-            for line in json_lines:
+    # Get dates from all records
+    dates = []
+    for line in json_lines:
+        if line.strip():  
+            try:
                 record = json.loads(line)
                 dates.append(datetime.datetime.strptime(record['Date'], '%Y-%m-%d'))
-            
-            # Find the max date in this file
-            if dates:
-                file_max_date = max(dates)
-                if file_max_date > latest_date:
-                    latest_date = file_max_date
+            except (json.JSONDecodeError, KeyError) as e:
+                print(f"Error parsing line in {blob_name}: {e}")
+                continue
     
-    # Add one day to start from the next day
-    return latest_date + datetime.timedelta(days=1)
+    if not dates:
+        return datetime.datetime(2025, 3, 1)
+    
+    # Return the day after the most recent date
+    return max(dates) + datetime.timedelta(days=1)
 
 def download_data(ticker, start_date, end_date):
-    """Download data for the specified ticker and date range."""
     if start_date >= end_date:
         print(f"No new data to download for {ticker} (start_date: {start_date}, end_date: {end_date})")
         return pd.DataFrame()
