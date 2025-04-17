@@ -4,10 +4,10 @@ import datetime
 from google.cloud import storage, bigquery
 import os
 import json
-from airflow.providers.google.cloud.hooks.secret_manager import CloudSecretManagerHook
+from airflow.providers.google.cloud.hooks.secret_manager import GoogleCloudSecretManagerHook
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CloudSecretManagerHook().get_secret(secret_id='is3107-key', project_id=PROJECT_ID, version_id=version_id)
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = GoogleCloudSecretManagerHook().get_secret(secret_id='is3107-key', project_id=PROJECT_ID, version_id=version_id)
 
 
 # === CONFIGURATION ===
