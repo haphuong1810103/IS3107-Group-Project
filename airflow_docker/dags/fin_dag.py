@@ -7,8 +7,11 @@ from io import StringIO
 import pandas as pd
 import json
 import os
+from airflow.providers.google.cloud.hooks.secret_manager import CloudSecretManagerHook
 
-#
+PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CloudSecretManagerHook().get_secret(secret_id='is3107-key', project_id=PROJECT_ID, version_id=version_id)
+
 default_args = {
     'owner': 'airflow',
     'start_date': datetime(2025, 4, 1),

@@ -1,9 +1,13 @@
 import yfinance as yf
 import pandas as pd
 import datetime
-from google.cloud import storage, bigquery
 import os
 import json
+from google.cloud import storage, bigquery
+from airflow.providers.google.cloud.hooks.secret_manager import CloudSecretManagerHook
+
+PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = CloudSecretManagerHook().get_secret(secret_id='is3107-key', project_id=PROJECT_ID, version_id=version_id)
 
 # === CONFIGURATION ===
 TICKERS = ['^GSPC', 'DJIA', '^NDX', 'BTC-USD', 'DOGE-USD']
@@ -12,9 +16,6 @@ DATA_DIR = 'yfinance_30day_data_json/'
 
 BQ_DATASET = 'market_data'
 BQ_TABLE = 'yf_30days_json'
-
-# Google credentials setup
-PROJECT_ID = os.environ.get('GCP_PROJECT_ID')
 
 # === FUNCTIONS ===
 def get_tickers():
