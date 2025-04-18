@@ -40,9 +40,13 @@ BQ_DATASET = 'market_data'
 BQ_TABLE = 'yf_daily_json'
 
 # === FUNCTIONS ===
+def get_tickers():
+    """Return the list of tickers to download."""
+    return TICKERS
+
 def get_latest_data_date(ticker):
     """Find the latest date for which we have data for the given ticker."""
-    client = storage.Client()
+    client = get_authenticated_storage_client(PROJECT_ID)
     bucket = client.bucket(BUCKET_NAME)
     
     ticker_safe = ticker.replace('^','')

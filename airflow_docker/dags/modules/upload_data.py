@@ -41,8 +41,8 @@ BQ_DATASET = 'market_data'
 BQ_TABLE = 'yf_daily_json'
 
 def upload_json_to_gcs(df, ticker):
-    """Upload DataFrame to GCS as newline-delimited JSON, appending to existing file."""
-    client = storage.Client()
+    """Upload DataFrame to GCS as newline-delimited JSON."""
+    client = client = get_authenticated_storage_client(PROJECT_ID)
     bucket = client.bucket(BUCKET_NAME)
     
     ticker_safe = ticker.replace('^','')
