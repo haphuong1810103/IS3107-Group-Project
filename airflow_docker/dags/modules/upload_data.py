@@ -35,10 +35,10 @@ def access_secret_version(project_id: str, secret_id: str, version_id: str) -> s
 # === CONFIGURATION ===
 TICKERS = ['^GSPC', 'DJIA', '^NDX', 'BTC-USD', 'DOGE-USD']
 BUCKET_NAME = 'yfinance-data'
-DATA_DIR = 'yfinance_30day_data_json/'
+DATA_DIR = 'yfinance_daily_data_json/'
 
 BQ_DATASET = 'market_data'
-BQ_TABLE = 'yf_30days_json'
+BQ_TABLE = 'yf_daily_json'
 
 def upload_json_to_gcs(df, ticker):
     """Upload DataFrame to GCS as newline-delimited JSON, appending to existing file."""
