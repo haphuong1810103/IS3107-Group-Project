@@ -22,38 +22,34 @@ default_args = {
 
 @dag(dag_id='fin_dag', default_args=default_args, schedule_interval="@daily", catchup=False)
 def fin_dag():    
-    @task_group(group_id='download_data')
-    def download_dump_data():
-        @task(task_id='yfinance_fetch_tickers')
-        def fetch_tickers():
-            return get_tickers()
-        
-        @task(task_id='yfinance_get_latest_data_date')
-        def get_latest_data_dates(ticker_list):
-            return [{"ticker": ticker, "latest_date": get_latest_data_date(ticker)} for ticker in ticker_list]
+    @task(task_id='fetch_tickers')
+    def fetch_ticker_list():
+        return get_tickers()
 
-        @task(task_id='yfinance_download_data')
-        def download_and_upload_data(ticker_info:dict):
-            ticker = ticker_info["ticker"]
-            start_date = ticker_info["latest_date"]
-            end_date = datetime.now()
-            
-            try:
-                ticker_data = download_data(ticker, start_date, end_date)
-            except Exception as e:
-                raise AirflowException(f"Failed to download data for {ticker}: {e}")
-            
-            if not ticker_data.empty:
-                gcs_uri = upload_json_to_gcs(ticker_data, ticker)
-                load_json_to_bigquery(gcs_uri)
-            else:
-                print(f"No new data for {ticker} since {start_date}. Skipping upload.")
-            return f"Download and upload completed for {ticker}"
+    @task(task_id='get_latest_dates')
+    def get_latest_dates(ticker_list):
+        return get_latest_data_date(ticker_list)  # returns dict {ticker: latest_date}
+
+    @task(task_id='download_upload_all')
+    def download_upload_all(ticker_start_dates: dict):
+        try:
+            combined_df = download_data(ticker_start_dates)
+        except Exception as e:
+            raise AirflowException(f"Error during data download: {e}")
         
-        tickers = fetch_tickers()
-        latest_data_dates = get_latest_data_dates(tickers)
-        download_and_upload_data.expand(ticker_info=latest_data_dates)
-    
-    download_dump_data() 
+        if not combined_df.empty:
+            try:
+                gcs_uri = upload_json_to_gcs(combined_df)
+                load_json_to_bigquery(gcs_uri)
+                return "Upload successful"
+            except Exception as e:
+                raise AirflowException(f"Error during upload: {e}")
+        else:
+            print("No new data to upload.")
+            return "No data"
+
+    tickers = fetch_ticker_list()
+    latest_dates = get_latest_dates(tickers)
+    download_upload_all(latest_dates)
 
 dag_instance = fin_dag()

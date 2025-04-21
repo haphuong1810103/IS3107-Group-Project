@@ -40,34 +40,30 @@ DATA_DIR = 'yfinance_daily_data_json/'
 BQ_DATASET = 'market_data'
 BQ_TABLE = 'yf_daily_json'
 
-def upload_json_to_gcs(df, ticker):
-    """Upload DataFrame to GCS as newline-delimited JSON."""
-    client = client = get_authenticated_storage_client(PROJECT_ID)
+def upload_json_to_gcs(df):
+    """Upload entire combined DataFrame to a single blob in GCS as newline-delimited JSON."""
+    client = get_authenticated_storage_client(PROJECT_ID)
     bucket = client.bucket(BUCKET_NAME)
-    
-    ticker_safe = ticker.replace('^','')
-    filename = f"{DATA_DIR}{ticker_safe}.json"
-    blob = bucket.blob(filename)
-    
+    blob = bucket.blob(f"{DATA_DIR}stock_data.json")
+
     new_content = df.to_json(orient='records', lines=True)
-    
+
     if blob.exists():
         existing_content = blob.download_as_string().decode('utf-8')
-        
         if existing_content and not existing_content.endswith('\n'):
             existing_content += '\n'
-        
         combined_content = existing_content + new_content
         blob.upload_from_string(combined_content, content_type='application/json')
-        print(f"Appended new data to {filename} in GCS bucket {BUCKET_NAME}")
+        print(f"Appended new data to stock_data.json in GCS bucket {BUCKET_NAME}")
     else:
         blob.upload_from_string(new_content, content_type='application/json')
-        print(f"Created new file {filename} in GCS bucket {BUCKET_NAME}")
+        print(f"Created new file stock_data.json in GCS bucket {BUCKET_NAME}")
 
-    return f"gs://{BUCKET_NAME}/{filename}"
+    return f"gs://{BUCKET_NAME}/{DATA_DIR}stock_data.json"
+
 
 def load_json_to_bigquery(gcs_uri):
-    """Load JSON data from GCS to BigQuery."""
+    """Load newline-delimited JSON data from GCS into a BigQuery table."""
     client = bigquery.Client()
     table_ref = f"{PROJECT_ID}.{BQ_DATASET}.{BQ_TABLE}"
 
@@ -78,5 +74,6 @@ def load_json_to_bigquery(gcs_uri):
     )
 
     load_job = client.load_table_from_uri(gcs_uri, table_ref, job_config=job_config)
-    load_job.result()  # Wait until finished
+    load_job.result()  # Wait for the job to complete
     print(f"Loaded data from {gcs_uri} to BigQuery table {table_ref}")
+

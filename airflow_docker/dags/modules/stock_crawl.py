@@ -44,59 +44,75 @@ def get_tickers():
     """Return the list of tickers to download."""
     return TICKERS
 
-def get_latest_data_date(ticker):
+def get_latest_data_date(tickers):
     """Find the latest date for which we have data for the given ticker."""
     client = get_authenticated_storage_client(PROJECT_ID)
     bucket = client.bucket(BUCKET_NAME)
-    
-    ticker_safe = ticker.replace('^','')
-    blob_name = f"{DATA_DIR}{ticker_safe}.json"
+    blob_name = f"{DATA_DIR}stock_data.json"
     blob = bucket.blob(blob_name)
     
+    result = {}
+    ticker_dates = {ticker: [] for ticker in tickers}
+    
     if not blob.exists():
-        return datetime.datetime(2023, 1, 1)
+        return {ticker: datetime.datetime(2023, 1, 1) for ticker in tickers}
     
     content = blob.download_as_string()
     json_lines = content.decode('utf-8').strip().split('\n')
     
-    if not json_lines:
-        return datetime.datetime(2025, 3, 1)
-    
-    # Get dates from all records
-    dates = []
     for line in json_lines:
         if line.strip():  
             try:
                 record = json.loads(line)
-                dates.append(datetime.datetime.strptime(record['Date'], '%Y-%m-%d'))
+                ticker = record.get['Ticker']
+                date = datetime.datetime.strptime(record['Date'], '%Y-%m-%d')
+                if ticker in tickers:
+                    tickers[ticker] = max(tickers[ticker], date)
             except (json.JSONDecodeError, KeyError) as e:
                 print(f"Error parsing line in {blob_name}: {e}")
                 continue
     
-    if not dates:
-        return datetime.datetime(2025, 3, 1)
-    
-    # Return the day after the most recent date
-    return max(dates) + datetime.timedelta(days=1)
+    for ticker in tickers:
+        dates = ticker_dates.get(ticker, [])
+        if not dates:
+            # If no records for ticker, assume starting from 2025-03-01
+            result[ticker] = datetime.datetime(2025, 3, 1)
+        else:
+            result[ticker] = max(dates) + datetime.timedelta(days=1)
 
-def download_data(ticker, start_date, end_date):
-    if start_date >= end_date:
-        print(f"No new data to download for {ticker} (start_date: {start_date}, end_date: {end_date})")
+    return result
+
+def download_data(ticker_start_dates):
+    """Download and return combined stock data for multiple tickers from their respective start dates to today."""
+    end_date = datetime.datetime.today().date()
+    all_data = []
+
+    for ticker, start_date in ticker_start_dates.items():
+        if isinstance(start_date, datetime.datetime):
+            start_date = start_date.date()
+
+        if start_date >= end_date:
+            print(f"No new data to download for {ticker} (start_date: {start_date}, end_date: {end_date})")
+            continue
+
+        print(f"Downloading {ticker} data from {start_date} to {end_date}")
+        df = yf.download(ticker, start=start_date, end=end_date)
+
+        if df.empty:
+            print(f"No data available for {ticker} in the requested date range")
+            continue
+
+        df = df.reset_index()
+
+        # If MultiIndex, flatten by taking the top-level column names
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = [col[0] for col in df.columns.values]
+
+        df['Date'] = df['Date'].astype(str)
+        df['Ticker'] = ticker
+        all_data.append(df)
+
+    if all_data:
+        return pd.concat(all_data, ignore_index=True)
+    else:
         return pd.DataFrame()
-    
-    print(f"Downloading {ticker} data from {start_date} to {end_date}")
-    df = yf.download(ticker, start=start_date, end=end_date)
-    
-    if df.empty:
-        print(f"No data available for {ticker} in the requested date range")
-        return df
-    
-    df = df.reset_index()
-
-    # If MultiIndex, flatten by combining levels with underscore
-    if isinstance(df.columns, pd.MultiIndex):
-        df.columns = [col[0] for col in df.columns.values]
-
-    df['Date'] = df['Date'].astype(str)
-    df['Ticker'] = ticker
-    return df
