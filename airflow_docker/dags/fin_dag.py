@@ -8,7 +8,6 @@ from modules.upload_data import upload_json_to_gcs, load_json_to_bigquery
 
 # Set up environment
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
-SECRET_ID = os.environ.get("GOOGLE_SECRET_ID")
 
 default_args = {
     'owner': 'airflow',
@@ -20,7 +19,7 @@ default_args = {
     'email_on_retry': False,  # Optionally, set to True if you want emails on retry as well
 }
 
-@dag(dag_id='fin_dag', default_args=default_args, schedule_interval=None, catchup=False)
+@dag(dag_id='fin_dag', default_args=default_args, schedule_interval="@daily", catchup=False)
 def fin_dag():
     @task(task_id='initialize')
     def initialize():

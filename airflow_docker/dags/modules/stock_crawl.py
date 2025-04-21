@@ -8,7 +8,6 @@ import json
 import os
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
-SECRET_ID = os.environ.get("GOOGLE_SECRET_ID")
 
 def get_authenticated_storage_client(project_id: str) -> storage.Client:
     """
@@ -20,7 +19,7 @@ def get_authenticated_storage_client(project_id: str) -> storage.Client:
     Returns:
         Authenticated storage client
     """
-    secret_json = access_secret_version(project_id, SECRET_ID, "latest")
+    secret_json = access_secret_version(project_id, "is3107-key", "latest")
     credentials_info = json.loads(secret_json)
     credentials = service_account.Credentials.from_service_account_info(credentials_info)
     return storage.Client(credentials=credentials, project=project_id)
