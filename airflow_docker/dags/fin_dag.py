@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from airflow.decorators import dag, task, task_group
 from modules.stock_crawl import get_tickers, get_latest_data_date, download_data
 from modules.upload_data import upload_json_to_gcs, load_json_to_bigquery
+from airflow.exceptions import AirflowException
 
 # Set up environment
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
@@ -13,18 +14,14 @@ default_args = {
     'owner': 'airflow',
     'start_date': datetime(2025, 4, 1),
     'retries': 2,  # Set retries to 2
-    'retry_delay': timedelta(minutes=1),  # Delay between retries
+    'retry_delay': timedelta(seconds=30),  # Delay between retries
     'email': ['nigeltanjerkang@gmail.com'],
-    'email_on_failure': True,  # Send email on task failure
+    'email_on_failure': False,  # Send email on task failure
     'email_on_retry': False,  # Optionally, set to True if you want emails on retry as well
 }
 
 @dag(dag_id='fin_dag', default_args=default_args, schedule_interval="@daily", catchup=False)
-def fin_dag():
-    @task(task_id='initialize')
-    def initialize():
-        return "Initializing the DAG"
-    
+def fin_dag():    
     @task_group(group_id='download_data')
     def download_dump_data():
         @task(task_id='yfinance_fetch_tickers')
@@ -41,23 +38,22 @@ def fin_dag():
             start_date = ticker_info["latest_date"]
             end_date = datetime.now()
             
-            ticker_data = download_data(ticker, start_date, end_date)
+            try:
+                ticker_data = download_data(ticker, start_date, end_date)
+            except Exception as e:
+                raise AirflowException(f"Failed to download data for {ticker}: {e}")
             
             if not ticker_data.empty:
                 gcs_uri = upload_json_to_gcs(ticker_data, ticker)
                 load_json_to_bigquery(gcs_uri)
             else:
                 print(f"No new data for {ticker} since {start_date}. Skipping upload.")
+            return f"Download and upload completed for {ticker}"
         
         tickers = fetch_tickers()
         latest_data_dates = get_latest_data_dates(tickers)
         download_and_upload_data.expand(ticker_info=latest_data_dates)
-
-
-    @task(task_id='end')
-    def end():
-        return "DAG execution completed."
     
-    initialize() >> download_dump_data() >> end()
+    download_dump_data() 
 
 dag_instance = fin_dag()
