@@ -1,6 +1,6 @@
 import yfinance as yf
 import pandas as pd
-import datetime
+from datetime import datetime
 import os
 import json
 from google.cloud import storage, bigquery, secretmanager
@@ -8,30 +8,11 @@ from google.oauth2 import service_account
 import json
 import os
 from stock_crawl import get_tickers, get_latest_data_date, download_data
+from dotenv import load_dotenv
 
-PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
-
-def get_authenticated_storage_client(project_id: str) -> storage.Client:
-    """
-    Creates authenticated GCS client using credentials from Secret Manager
-    
-    Args:
-        project_id: GCP project ID containing the secret
-        
-    Returns:
-        Authenticated storage client
-    """
-    secret_json = access_secret_version(project_id, "is3107-key", "latest")
-    credentials_info = json.loads(secret_json)
-    credentials = service_account.Credentials.from_service_account_info(credentials_info)
-    return storage.Client(credentials=credentials, project=project_id)
-
-def access_secret_version(project_id: str, secret_id: str, version_id: str) -> str:
-    """Helper function to access secret version"""
-    client = secretmanager.SecretManagerServiceClient()
-    name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
-    response = client.access_secret_version(request={"name": name})
-    return response.payload.data.decode("UTF-8")
+load_dotenv()
+PROJECT_ID = os.getenv("GCP_PROJECT_ID")
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv('GOOGLE_APPLICATION_CREDENTIALS') 
 
 # === CONFIGURATION ===
 TICKERS = ['^GSPC', 'DJIA', '^NDX', 'BTC-USD', 'DOGE-USD']
@@ -43,7 +24,7 @@ BQ_TABLE = 'yf_daily_json'
 
 def upload_json_to_gcs(df, ticker):
     """Upload DataFrame to GCS as newline-delimited JSON."""
-    client = client = get_authenticated_storage_client(PROJECT_ID)
+    client = storage.Client()
     bucket = client.bucket(BUCKET_NAME)
     
     ticker_safe = ticker.replace('^','')
@@ -84,4 +65,7 @@ def load_json_to_bigquery(gcs_uri):
 
 voo_latest_date = get_latest_data_date("VOO")
 ticker_data = download_data("VOO", voo_latest_date, datetime.now())
-print(ticker_data)
+gcs_uri = upload_json_to_gcs(ticker_data, "VOO")
+print("Loaded to GCS")
+load_json_to_bigquery(gcs_uri)
+print("Loaded to BigQuery")
