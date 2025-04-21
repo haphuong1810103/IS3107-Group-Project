@@ -51,11 +51,11 @@ def get_latest_data_date(tickers):
     blob_name = f"{DATA_DIR}stock_data.json"
     blob = bucket.blob(blob_name)
     
-    result = {}
-    ticker_dates = {ticker: [] for ticker in tickers}
+    # Initialize with default dates
+    result = {ticker: datetime.datetime(2023, 1, 1) for ticker in tickers}
     
     if not blob.exists():
-        return {ticker: datetime.datetime(2023, 1, 1) for ticker in tickers}
+        return result
     
     content = blob.download_as_string()
     json_lines = content.decode('utf-8').strip().split('\n')
@@ -64,21 +64,18 @@ def get_latest_data_date(tickers):
         if line.strip():  
             try:
                 record = json.loads(line)
-                ticker = record.get['Ticker']
-                date = datetime.datetime.strptime(record['Date'], '%Y-%m-%d')
+                ticker = record.get('Ticker') 
                 if ticker in tickers:
-                    tickers[ticker] = max(tickers[ticker], date)
+                    date = datetime.datetime.strptime(record['Date'], '%Y-%m-%d')
+                    if date > result[ticker]:
+                        result[ticker] = date
             except (json.JSONDecodeError, KeyError) as e:
                 print(f"Error parsing line in {blob_name}: {e}")
                 continue
     
-    for ticker in tickers:
-        dates = ticker_dates.get(ticker, [])
-        if not dates:
-            # If no records for ticker, assume starting from 2025-03-01
-            result[ticker] = datetime.datetime(2025, 3, 1)
-        else:
-            result[ticker] = max(dates) + datetime.timedelta(days=1)
+    # Add one day to get the start date for new data
+    for ticker in result:
+        result[ticker] = result[ticker] + datetime.timedelta(days=1)
 
     return result
 
