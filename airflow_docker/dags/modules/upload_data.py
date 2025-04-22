@@ -38,10 +38,7 @@ def get_authenticated_storage_client(project_id: str) -> storage.Client:
 # === CONFIGURATION ===
 TICKERS = ['^GSPC', '^DJI', '^NDX', 'BTC-USD', 'DOGE-USD']
 BUCKET_NAME = 'yfinance-data'
-DATA_DIR = 'yfinance_daily_data_json/'
 
-BQ_DATASET = 'market_data'
-BQ_TABLE = 'yf_daily_json'
 
 def upload_json_to_gcs(df, data_dir, blob_name):
     """Upload entire combined DataFrame to a single blob in GCS as newline-delimited JSON."""
@@ -62,7 +59,7 @@ def upload_json_to_gcs(df, data_dir, blob_name):
         blob.upload_from_string(new_content, content_type='application/json')
         print(f"Created new file {blob_name}.json in GCS bucket {BUCKET_NAME}")
 
-    return f"gs://{BUCKET_NAME}/{DATA_DIR}{blob_name}.json"
+    return f"gs://{BUCKET_NAME}/{data_dir}/{blob_name}.json"
 
 
 def load_json_to_bigquery(gcs_uri, bq_dataset, bq_table):
