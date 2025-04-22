@@ -32,7 +32,7 @@ def access_secret_version(project_id: str, secret_id: str, version_id: str) -> s
     return response.payload.data.decode("UTF-8")
 
 # === CONFIGURATION ===
-TICKERS = ['^GSPC', 'DJIA', '^NDX', 'BTC-USD', 'DOGE-USD']
+TICKERS = ['^GSPC', '^DJI', '^NDX', 'BTC-USD', 'DOGE-USD']
 BUCKET_NAME = 'yfinance-data'
 DATA_DIR = 'yfinance_daily_data_json/'
 

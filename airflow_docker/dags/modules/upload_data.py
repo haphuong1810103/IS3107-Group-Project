@@ -33,7 +33,7 @@ def access_secret_version(project_id: str, secret_id: str, version_id: str) -> s
     return response.payload.data.decode("UTF-8")
 
 # === CONFIGURATION ===
-TICKERS = ['^GSPC', 'DJIA', '^NDX', 'BTC-USD', 'DOGE-USD']
+TICKERS = ['^GSPC', '^DJI', '^NDX', 'BTC-USD', 'DOGE-USD']
 BUCKET_NAME = 'yfinance-data'
 DATA_DIR = 'yfinance_daily_data_json/'
 
@@ -76,4 +76,3 @@ def load_json_to_bigquery(gcs_uri):
     load_job = client.load_table_from_uri(gcs_uri, table_ref, job_config=job_config)
     load_job.result()  # Wait for the job to complete
     print(f"Loaded data from {gcs_uri} to BigQuery table {table_ref}")
-
