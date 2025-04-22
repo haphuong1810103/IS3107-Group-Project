@@ -29,8 +29,8 @@ def fin_dag():
     
     @task(task_id='upload_largest_companies')
     def upload_largest_companies(largest_companies_df):
-        gcs_uri = upload_json_to_gcs(largest_companies_df, "largest_companies")
-        load_json_to_bigquery(gcs_uri)
+        gcs_uri = upload_json_to_gcs(largest_companies_df, "company_data_json", "largest_companies")
+        load_json_to_bigquery(gcs_uri, "market_data", "largest_companies_data_json")
     
     @task(task_id='fetch_tickers')
     def fetch_ticker_list():
@@ -49,8 +49,8 @@ def fin_dag():
         
         if not combined_df.empty:
             try:
-                gcs_uri = upload_json_to_gcs(combined_df, "stock_data")
-                load_json_to_bigquery(gcs_uri)
+                gcs_uri = upload_json_to_gcs(combined_df, "yfinance_daily_data_json", "stock_data")
+                load_json_to_bigquery(gcs_uri, "market_data", "yf_daily_json")
                 return "Upload successful"
             except Exception as e:
                 raise AirflowException(f"Error during upload: {e}")

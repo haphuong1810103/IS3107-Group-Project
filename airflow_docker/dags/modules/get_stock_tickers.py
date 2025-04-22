@@ -69,7 +69,7 @@ def get_top_50_tickers(project_id: str):
     
     # Get largest companies data
     print("Fetching largest companies by market cap...")
-    companies_df = get_largest_companies_fmp(fmp_api_key, limit=500)
+    companies_df = get_largest_companies_fmp()
     
     if companies_df is not None:
         # Take only the top 50
