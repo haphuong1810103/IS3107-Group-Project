@@ -43,7 +43,7 @@ DATA_DIR = 'yfinance_daily_data_json/'
 BQ_DATASET = 'market_data'
 BQ_TABLE = 'yf_daily_json'
 
-def upload_json_to_gcs(df):
+def upload_json_to_gcs(df, blob_name):
     """Upload entire combined DataFrame to a single blob in GCS as newline-delimited JSON."""
     client = get_authenticated_storage_client(PROJECT_ID)
     bucket = client.bucket(BUCKET_NAME)
@@ -62,7 +62,7 @@ def upload_json_to_gcs(df):
         blob.upload_from_string(new_content, content_type='application/json')
         print(f"Created new file stock_data.json in GCS bucket {BUCKET_NAME}")
 
-    return f"gs://{BUCKET_NAME}/{DATA_DIR}stock_data.json"
+    return f"gs://{BUCKET_NAME}/{DATA_DIR}{blob_name}.json"
 
 
 def load_json_to_bigquery(gcs_uri):
