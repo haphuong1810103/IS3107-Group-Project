@@ -25,7 +25,8 @@ def get_fmp_api_key(project_id: str) -> str:
     return api_key
 
 # get largest companies by market cap
-def get_largest_companies_fmp(api_key, limit=500):
+def get_largest_companies_fmp(limit=500):
+    api_key = get_fmp_api_key(PROJECT_ID)
     url = f"https://financialmodelingprep.com/api/v3/market-capitalization/AAPL,MSFT,GOOG,AMZN,META,TSLA,BRK-B,NVDA,UNH,JNJ?apikey={api_key}"
     
     # Better option: Use their stock screening API to get a sorted list directly

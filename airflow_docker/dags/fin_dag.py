@@ -34,7 +34,7 @@ def fin_dag():
     
     @task(task_id='fetch_tickers')
     def fetch_ticker_list():
-        return get_top_50_tickers()
+        return get_top_50_tickers(PROJECT_ID)
 
     @task(task_id='get_latest_dates')
     def get_latest_dates(ticker_list):
@@ -60,7 +60,7 @@ def fin_dag():
 
     largest_companies = get_largest_market_cap_companies()
     upload_largest_companies(largest_companies)
-    
+
     tickers = fetch_ticker_list()
     latest_dates = get_latest_dates(tickers)
     download_upload_all(latest_dates)
