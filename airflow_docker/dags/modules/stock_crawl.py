@@ -34,7 +34,7 @@ def get_authenticated_storage_client(project_id: str) -> storage.Client:
     return storage.Client(credentials=credentials, project=project_id)
 
 # === CONFIGURATION ===
-TICKERS = ['^GSPC', 'DJIA', '^NDX', 'BTC-USD', 'DOGE-USD']
+TICKERS = ['^GSPC', '^DJI', '^NDX', 'BTC-USD', 'DOGE-USD']
 BUCKET_NAME = 'yfinance-data'
 DATA_DIR = 'yfinance_daily_data_json/'
 
