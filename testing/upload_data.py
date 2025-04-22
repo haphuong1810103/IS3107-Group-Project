@@ -7,7 +7,7 @@ from google.cloud import storage, bigquery, secretmanager
 from google.oauth2 import service_account
 import json
 import os
-from stock_crawl import get_tickers, get_latest_data_date, download_data
+from testing.stock_crawl import get_tickers, get_latest_data_date, download_data
 from dotenv import load_dotenv
 
 load_dotenv()
