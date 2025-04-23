@@ -39,8 +39,20 @@ def get_authenticated_storage_client(project_id: str) -> storage.Client:
 TICKERS = ['^GSPC', '^DJI', '^NDX', 'BTC-USD', 'DOGE-USD']
 BUCKET_NAME = 'yfinance-data'
 
+def upload_company_data_json_to_gcs(df, data_dir="company_data_json", blob_name="largest_companies"):
+    """Upload entire combined DataFrame to a single blob in GCS as newline-delimited JSON."""
+    client = get_authenticated_storage_client(PROJECT_ID)
+    bucket = client.bucket(BUCKET_NAME)
+    blob = bucket.blob(f"{data_dir}/{blob_name}.json")
 
-def upload_json_to_gcs(df, data_dir, blob_name):
+    new_content = df.to_json(orient='records', lines=True)
+    blob.upload_from_string(new_content, content_type='application/json')
+    print(f"Updated file {blob_name}.json in GCS bucket {BUCKET_NAME}")
+
+    return f"gs://{BUCKET_NAME}/{data_dir}/{blob_name}.json"
+
+
+def upload_daily_data_json_to_gcs(df, data_dir="yfinance_daily_data_json", blob_name="stock_data"):
     """Upload entire combined DataFrame to a single blob in GCS as newline-delimited JSON."""
     client = get_authenticated_storage_client(PROJECT_ID)
     bucket = client.bucket(BUCKET_NAME)
@@ -63,16 +75,23 @@ def upload_json_to_gcs(df, data_dir, blob_name):
 
 
 def load_json_to_bigquery(gcs_uri, bq_dataset, bq_table):
-    """Load newline-delimited JSON data from GCS into a BigQuery table."""
+    """Load newline-delimited JSON data from GCS into a BigQuery table, replacing existing data"""
     client = bigquery.Client()
     table_ref = f"{PROJECT_ID}.{bq_dataset}.{bq_table}"
 
+    try:
+        client.delete_table(table_ref)
+        print(f"Deleted existing table {table_ref}")
+    except Exception as e:
+        print(f"Table did not exist or couldn't be deleted: {e}")
+
+    # Then create new table with fresh data
     job_config = bigquery.LoadJobConfig(
         source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
         autodetect=True,
-        write_disposition="WRITE_APPEND"
+        write_disposition="WRITE_APPEND"  
     )
 
     load_job = client.load_table_from_uri(gcs_uri, table_ref, job_config=job_config)
     load_job.result()  # Wait for the job to complete
-    print(f"Loaded data from {gcs_uri} to BigQuery table {table_ref}")
+    print(f"Created new table with data from {gcs_uri} to BigQuery table {table_ref}")

@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from airflow.decorators import dag, task, task_group
 from modules.get_stock_tickers import get_largest_companies_fmp, get_top_50_tickers
 from modules.stock_crawl import get_latest_data_date, download_data
-from modules.upload_data import upload_json_to_gcs, load_json_to_bigquery
+from modules.upload_data import upload_company_data_json_to_gcs, upload_daily_data_json_to_gcs, load_json_to_bigquery
 from airflow.exceptions import AirflowException
 
 # Set up environment
@@ -29,7 +29,7 @@ def fin_dag():
     
     @task(task_id='upload_largest_companies')
     def upload_largest_companies(largest_companies_df):
-        gcs_uri = upload_json_to_gcs(largest_companies_df, "company_data_json", "largest_companies")
+        gcs_uri = upload_company_data_json_to_gcs(largest_companies_df, "company_data_json", "largest_companies")
         load_json_to_bigquery(gcs_uri, "market_data", "largest_companies_data_json")
     
     @task(task_id='fetch_tickers')
@@ -43,13 +43,13 @@ def fin_dag():
     @task(task_id='download_upload_all')
     def download_upload_all(ticker_start_dates: dict):
         try:
-            combined_df = download_data(ticker_start_dates)
+            new_data_df = download_data(ticker_start_dates)
         except Exception as e:
             raise AirflowException(f"Error during data download: {e}")
         
-        if not combined_df.empty:
+        if not new_data_df.empty:
             try:
-                gcs_uri = upload_json_to_gcs(combined_df, "yfinance_daily_data_json", "stock_data")
+                gcs_uri = upload_daily_data_json_to_gcs(new_data_df, "yfinance_daily_data_json", "stock_data")
                 load_json_to_bigquery(gcs_uri, "market_data", "yf_daily_json")
                 return "Upload successful"
             except Exception as e:
