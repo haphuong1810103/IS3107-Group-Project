@@ -19,7 +19,12 @@ TRAINING_TIMESTAMP = datetime.now()
 
 def fetch_market_data(project_id: str, table_id: str, columns: list) -> pd.DataFrame:
     client = bigquery.Client(project=project_id)
-    query = f"SELECT {', '.join(columns)} FROM `{table_id}`"
+    query = f"""
+    SELECT {', '.join(columns)} FROM `{table_id}`
+    WHERE 
+        Ticker in ('AAPL', 'NVDA', 'MSFT')
+        AND Date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR)
+    """
     return client.query(query).to_dataframe()
 
 def arima_backtest(df: pd.DataFrame, training_timestamp: datetime):
