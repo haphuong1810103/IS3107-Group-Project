@@ -17,9 +17,14 @@ TABLE_ID = "is3107-project-455413.market_data.yf_daily_json"
 BIGQUERY_COLUMNS = ["Ticker", "Date", "Open", "High", "Low", "Close", "Volume"]
 TRAINING_TIMESTAMP = datetime.now()
 
-def fetch_market_data(project_id: str, table_id: str, columns: list) -> pd.DataFrame:
+def fetch_market_data(project_id=PROJECT_ID, table_id=TABLE_ID, columns=BIGQUERY_COLUMNS) -> pd.DataFrame:
     client = bigquery.Client(project=project_id)
-    query = f"SELECT {', '.join(columns)} FROM `{table_id}`"
+    query = f"""
+        SELECT {', '.join(columns)} 
+        FROM `{table_id}`
+        WHERE Ticker IN ('AAPL', 'MSFT', 'NVDA')
+        AND Date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR)
+    """
     return client.query(query).to_dataframe()
 
 def arima_backtest(df: pd.DataFrame, training_timestamp: datetime):
