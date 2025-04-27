@@ -7,7 +7,8 @@ IS3107 Final Project
 
 ## Repository Structure
 
-### airflow_docker
+
+### airflow_docker (note that Docker is no longer used as Airflow is hosted on Google Cloud Composer)
 
 - **Purpose**: Contains the Docker Compose file for setting up the Airflow environment and will store all the Directed Acyclic Graph (DAG) scripts and Python functions for ETL and machine learning.
 - **Contents**:
