@@ -11,3 +11,5 @@ __pycache__/
 
 airflow_docker/logs/
 airflow_docker/dags/modules/__pycache__
+
+email_crawl.py
