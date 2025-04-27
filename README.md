@@ -33,3 +33,28 @@ IS3107 Final Project
     Password: airflow  
 
 ### notebooks (to update)
+
+### real_time_pipeline
+
+- **Purpose**: This folder sets up a real-time data pipeline that fetches stock market data from the Yahoo Finance API and imports it into BigQuery.
+The pipeline leverages several Google Cloud services:
+  - Cloud Run
+  - Cloud Scheduler
+  - Pub/Sub
+  - Dataflow
+  - BigQuery
+
+- **Contents**: 
+  - `Dockerfile`: Configuration file to containerize the Python script for deployment on Google Cloud Run.
+  - `requirements.txt`: List of Python packages required to run the script.
+  - `real_time_streaming.py`: Python script that fetches data from the Yahoo Finance API and publishes it as a message to Pub/Sub.
+
+- **Setup**:
+  1. Pub/Sub Setup
+     Create a Pub/Sub topic to publish the messages containing the stock data.
+  2. BigQuery Setup
+     Set up a BigQuery table to receive the streamed data.
+  3. Deploy Cloud Run Service
+     Deploy the real_time_streaming.py script to Google Cloud Run using the provided Dockerfile and requirements.txt.
+  4. Schedule the Job
+     Use Cloud Scheduler to trigger the Cloud Run service every minute to ensure real-time data fetching and publishing.
