@@ -50,11 +50,11 @@ The pipeline leverages several Google Cloud services:
   - `real_time_streaming.py`: Python script that fetches data from the Yahoo Finance API and publishes it as a message to Pub/Sub.
 
 - **Setup**:
-  1. Pub/Sub Setup
+  1. Pub/Sub Setup:
      Create a Pub/Sub topic to publish the messages containing the stock data.
-  2. BigQuery Setup
+  2. BigQuery Setup:
      Set up a BigQuery table to receive the streamed data.
-  3. Deploy Cloud Run Service
+  3. Deploy Cloud Run Service:
      Deploy the real_time_streaming.py script to Google Cloud Run using the provided Dockerfile and requirements.txt.
-  4. Schedule the Job
+  4. Schedule the Job:
      Use Cloud Scheduler to trigger the Cloud Run service every minute to ensure real-time data fetching and publishing.
